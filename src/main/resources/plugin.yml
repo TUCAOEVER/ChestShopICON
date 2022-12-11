@@ -1,5 +1,6 @@
 name: ChestShopICON
 version: '${project.version}'
-softdepend: [ChestShop, Trhologram]
+softdepend: [ChestShop, TrHologram]
+author: TUCAOEVER
 main: com.promc.chestshopicon.ChestShopICON
 api-version: 1.16
