@@ -28,31 +28,35 @@ import java.util.HashMap;
 
 public final class ChestShopICON extends JavaPlugin implements Listener {
 
-    private HashMap<Location, Hologram> signHoloMap = new HashMap<>();
-    private HashMap<Location, Location> containerSignMap = new HashMap<>();
-    private ArrayList<Sign> signArrayList = new ArrayList<>();
+    private final HashMap<Location, Hologram> signHoloMap = new HashMap<>();
+    private final HashMap<Location, Location> containerSignMap = new HashMap<>();
+    private final ArrayList<Sign> signArrayList = new ArrayList<>();
 
     @Override
     public void onEnable() {
         if (!Bukkit.getPluginManager().isPluginEnabled("ChestShop")) {
-            Bukkit.getLogger().severe("ChestShop not found. Disabling...");
+            error("ChestShop not found. Disabling...");
             this.setEnabled(false);
         } else if (!Bukkit.getPluginManager().isPluginEnabled("TrHologram")) {
-            Bukkit.getLogger().severe("TrHologram not found. Disabling...");
+            error("TrHologram not found. Disabling...");
             this.setEnabled(false);
         } else {
-            Bukkit.getLogger().info("ChestShopICON Enabled! by TUCAOEVER");
+            info("ChestShopICON Enabled! by TUCAOEVER");
             this.getServer().getPluginManager().registerEvents(this, this);
         }
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        info("Thanks for using ChestICON. by TUCAOEVER");
     }
 
     public void info(String info) {
         Bukkit.getLogger().info("[ChestShopICON] " + info);
+    }
+
+    public void error(String error) {
+        Bukkit.getLogger().severe("[ChestShopICON] " + error);
     }
 
     @EventHandler
@@ -108,14 +112,14 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
                     if (containerSignMap.containsKey(container.getLocation())) {
                         // 通过商店牌子位置获取全息对象
                         Hologram holo = signHoloMap.get(signLoc);
-                        // 移除此箱子和商店牌子的关联
-                        containerSignMap.remove(container.getLocation());
-                        // 移除此商店牌子位置对应的全息对象
-                        signHoloMap.remove(signLoc);
                         if (holo != null) {
                             // 摧毁全息对象
                             holo.destroy();
                         }
+                        // 移除此箱子和商店牌子的关联
+                        containerSignMap.remove(container.getLocation());
+                        // 移除此商店牌子位置对应的全息对象
+                        signHoloMap.remove(signLoc);
                     }
                 }
             }
@@ -143,7 +147,7 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
 
     @EventHandler
     public void shopDelete(ShopDestroyedEvent event) {
-        // 在删除商店时存在关联箱子 即 全息正常显示
+        // 在删除商店时商店牌子存在关联箱子 即 全息正常显示
         if (containerSignMap.containsValue(event.getSign().getLocation())) {
             if (event.getContainer() != null) {
                 Location containerLoc = getXYZLoc(event.getContainer().getLocation());
@@ -171,14 +175,14 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
                 Location signLoc = containerSignMap.get(blockLoc);
                 // 通过商店牌子位置获取全息对象
                 Hologram holo = signHoloMap.get(signLoc);
-                // 移除此箱子和商店牌子的关联
-                containerSignMap.remove(blockLoc);
-                // 移除此商店牌子位置对应的全息对象
-                signHoloMap.remove(signLoc);
                 if (holo != null) {
                     // 摧毁全息对象
                     holo.destroy();
                 }
+                // 移除此箱子和商店牌子的关联
+                containerSignMap.remove(blockLoc);
+                // 移除此商店牌子位置对应的全息对象
+                signHoloMap.remove(signLoc);
             }
 
         }
@@ -224,7 +228,8 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
     public Hologram display(Location location, ItemStack itemStack) {
         return TrHologramAPI
                 .builder(location)
-                .append(player -> itemStack).build();
+                .append(player -> itemStack)
+                .build();
     }
 
     public Location getXYZLoc(Location loc) {
