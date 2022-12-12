@@ -1,6 +1,10 @@
 package com.promc.chestshopicon;
 
 import com.Acrobot.Breeze.Utils.MaterialUtil;
+import com.Acrobot.Breeze.Utils.NameUtil;
+import com.Acrobot.ChestShop.ChestShop;
+import com.Acrobot.ChestShop.Events.ItemParseEvent;
+import com.Acrobot.ChestShop.Events.ItemStringQueryEvent;
 import com.Acrobot.ChestShop.Events.ShopCreatedEvent;
 import com.Acrobot.ChestShop.Events.ShopDestroyedEvent;
 import com.Acrobot.ChestShop.Signs.ChestShopSign;
@@ -14,7 +18,9 @@ import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -81,9 +87,26 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
                 Location containerLoc = getXYZLoc(container.getLocation());
                 Location signLoc = getXYZLoc(sign.getLocation());
 
-                String itemCode = sign.getLine((short) 3);
-                ItemStack displayStack = MaterialUtil.getItem(itemCode);
-
+                // 新建一个物品名称处理事件
+                ItemStringQueryEvent queryEvent = new ItemStringQueryEvent(null);
+                // 事件内物品名称设置
+                queryEvent.setItemString(sign.getLine(3));
+                // 调用事件
+                ChestShop.callEvent(queryEvent);
+                // 处理完物品名称获取新的物品名称(内部名称)
+                String material = queryEvent.getItemString();
+                // 新建一个物品处理事件 将物品名称处理事件处理过后的文件放进此事件中
+                ItemParseEvent parseEvent = new ItemParseEvent(material);
+                // 调用事件
+                ChestShop.callEvent(parseEvent);
+                // 返回物品处理事件处理完成的物品
+                ItemStack displayStack = parseEvent.getItem();
+                // 如果邻近的商店还没有设置商品则可能会出现异常 与此同时
+                // 物品处理事件返回的物品可能为空
+                // 如果返回的物品为空 则跳过此循环
+                if (displayStack == null) {
+                    continue;
+                }
                 Location displayLocation = container.getLocation().add(0.5, 2, 0.5);
                 if (!containerSignMap.containsKey(containerLoc)) {
                     // 将容器与商店牌子关联
@@ -127,12 +150,26 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
     }
 
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void shopCreate(ShopCreatedEvent event) {
         if (event.getContainer() != null) {
             Location displayLocation = event.getContainer().getLocation().add(0.5, 2, 0.5);
-            String itemCode = event.getSignLine((short) 3);
-            ItemStack displayStack = MaterialUtil.getItem(itemCode);
+            Sign sign = event.getSign();
+            // 新建一个物品名称处理事件
+            ItemStringQueryEvent queryEvent = new ItemStringQueryEvent(null);
+            // 事件内物品名称设置
+            queryEvent.setItemString(event.getSignLine((short) 3));
+            // 调用事件
+            ChestShop.callEvent(queryEvent);
+            // 处理完物品名称获取新的物品名称(内部名称)
+            String material = queryEvent.getItemString();
+            // 新建一个物品处理事件 将物品名称处理事件处理过后的文件放进此事件中
+            ItemParseEvent parseEvent = new ItemParseEvent(material);
+            // 调用事件
+            ChestShop.callEvent(parseEvent);
+            // 返回物品处理事件处理完成的物品
+            ItemStack displayStack = parseEvent.getItem();
+
             Location containerLoc = getXYZLoc(event.getContainer().getLocation());
             Location signLoc = getXYZLoc(event.getSign().getLocation());
             if (!containerSignMap.containsKey(containerLoc)) {
@@ -188,16 +225,28 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOW)
     public void containerRecover(BlockPlaceEvent event) {
         if (event.getBlock().getType().equals(Material.CHEST)) {
             // 找到最近的商店牌子
             Sign sign = uBlock.getConnectedSign(event.getBlock());
             // 如果找到附近有商店牌子
             if (sign != null) {
-                String itemCode = sign.getLine(3);
-                ItemStack displayStack = MaterialUtil.getItem(itemCode);
-                // 如果邻近的商店还没有设置商品则可能会出现异常
+                // 新建一个物品名称处理事件
+                ItemStringQueryEvent queryEvent = new ItemStringQueryEvent(null);
+                // 事件内物品名称设置
+                queryEvent.setItemString(sign.getLine(3));
+                // 调用事件
+                ChestShop.callEvent(queryEvent);
+                // 处理完物品名称获取新的物品名称(内部名称)
+                String material = queryEvent.getItemString();
+                // 新建一个物品处理事件 将物品名称处理事件处理过后的文件放进此事件中
+                ItemParseEvent parseEvent = new ItemParseEvent(material);
+                // 调用事件
+                ChestShop.callEvent(parseEvent);
+                // 返回物品处理事件处理完成的物品
+                ItemStack displayStack = parseEvent.getItem();
+                // 如果邻近的商店还没有设置商品则可能会出现异常 与此同时 物品处理事件返回的物品可能为空
                 if (displayStack == null) {
                     return;
                 }
@@ -207,11 +256,11 @@ public final class ChestShopICON extends JavaPlugin implements Listener {
                 Location containerLoc = getXYZLoc(event.getBlock().getLocation());
                 // 如果该商店牌子没有和任何箱子关联 即 不存在全息对象的情况下
                 if (!containerSignMap.containsValue(signLoc)) {
-                    /**
-                     * 设置新的全息显示坐标 此处不能用 containerLoc
-                     * 因为 containerLoc 在HashMap中是一个对象,对其使用add方法后
-                     * 其内部的数值会随之变动,即HashMap中的对象会随着对象的变化随时变化
-                     * 并不像是Skript内,存储的是一个不会变动的常量
+                    /*
+                      设置新的全息显示坐标 此处不能用 containerLoc
+                      因为 containerLoc 在HashMap中是一个对象,对其使用add方法后
+                      其内部的数值会随之变动,即HashMap中的对象会随着对象的变化随时变化
+                      并不像是Skript内,存储的是一个不会变动的常量
                      */
                     Location displayLocation = event.getBlock().getLocation().add(0.5, 2, 0.5);
                     // 将该商店牌子与箱子关联
